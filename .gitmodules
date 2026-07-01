@@ -1,0 +1,3 @@
+[submodule "fieldofchaos"]
+	path = fieldofchaos
+	url = git@github.com:barbalet/fieldofchaos.git
