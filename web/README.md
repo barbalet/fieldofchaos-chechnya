@@ -4,7 +4,9 @@ A playable static browser game using the existing Gold C rules compiled to genui
 
 ## Play locally
 
-From this directory: `python3 -m http.server 8080 --directory dist`, then open http://localhost:8080. A precompiled `dist/game.wasm` is included. No server-side application or npm packages are required.
+From the repository root: `python3 -m http.server 8080`, then open http://localhost:8080. The root `index.html` opens `web/index.html`, which loads the game assets from `web/dist/`. You can also serve just the website with `python3 -m http.server 8080 --directory web`, or run `python3 -m http.server 8080` from inside `web/`. A precompiled `dist/game.wasm` is included. No server-side application or npm packages are required.
+
+Use an HTTP server: opening HTML directly with `file://` cannot reliably load the WASM module.
 
 ## Rebuild
 
