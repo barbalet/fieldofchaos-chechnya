@@ -4,3 +4,6 @@ __pycache__/
 *.py[cod]
 rules-scratch.pdf
 rules-scratch.txt
+.build/
+macOS/build/
+.swiftpm/
