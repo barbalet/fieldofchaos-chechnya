@@ -43,4 +43,65 @@ final class GameModelTests: XCTestCase {
         XCTAssertEqual(game.round, 1); XCTAssertEqual(game.side, 0)
         XCTAssertEqual(game.value(0, 0), 2)
     }
+    @MainActor func testAutopilotStopsWhenBothPatrolsExhaustAmmunition() async throws {
+        // Seed 279 previously ran forever with one fully healed, empty unit
+        // on each side. Exercise the real engine and scheduled AI, not a mock.
+        let game = GameModel(seed: 279, interval: .milliseconds(1))
+        game.setAutopilot(true)
+        let deadline = ContinuousClock.now + .seconds(5)
+        while game.automatic && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        defer { game.setAutopilot(false) }
+        XCTAssertTrue(game.isDraw)
+        XCTAssertLessThan(game.winner, 0, "Ammunition exhaustion must not award a victory")
+        for side in 0...1 {
+            let survivors = (side * 3 ..< side * 3 + 3).filter(game.standing)
+            XCTAssertFalse(survivors.isEmpty)
+            for unit in survivors {
+                XCTAssertLessThan(game.value(unit, 5), 2)
+                XCTAssertEqual(game.value(unit, 6), 0)
+            }
+        }
+        XCTAssertFalse(game.automatic)
+        XCTAssertFalse(game.busy)
+        XCTAssertFalse(game.controllable)
+        XCTAssertTrue(game.title.contains("Draw"))
+        XCTAssertTrue(game.reports.contains { $0.contains("both patrols are out of ammunition") })
+        let snapshot = (0..<6).flatMap { i in (0...17).map { game.value(i, $0) } }
+        let round = game.round, side = game.side
+        game.setAutopilot(true) // A terminal battle cannot restart its timer.
+        game.endTurn()
+        try await Task.sleep(for: .milliseconds(15))
+        XCTAssertFalse(game.automatic)
+        XCTAssertEqual(game.round, round); XCTAssertEqual(game.side, side)
+        XCTAssertEqual(snapshot, (0..<6).flatMap { i in (0...17).map { game.value(i, $0) } })
+        game.newGame(seed: 123)
+        XCTAssertFalse(game.isDraw)
+        XCTAssertFalse(game.finished)
+        XCTAssertTrue(game.controllable)
+    }
+
+    @MainActor func testOneEmptyPatrolDoesNotEndBattleWhileOtherCanFire() {
+        let game = GameModel(seed: 279)
+        game.setComputerOpponent(false)
+        var observedOneEmptyPatrol = false
+        for _ in 0..<600 {
+            let empty = (0...1).map { side in
+                !(side * 3 ..< side * 3 + 3).contains {
+                    game.standing($0) && (game.value($0, 5) >= 2 || game.value($0, 6) > 0)
+                }
+            }
+            if empty[0] != empty[1], game.winner < 0 {
+                observedOneEmptyPatrol = true
+                XCTAssertFalse(game.isDraw)
+                XCTAssertFalse(game.finished)
+            }
+            if game.finished { break }
+            game.stepAI()
+        }
+        XCTAssertTrue(observedOneEmptyPatrol)
+        XCTAssertTrue(game.isDraw)
+    }
+
 }

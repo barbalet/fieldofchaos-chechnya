@@ -47,7 +47,7 @@ struct BattleView: View {
                     HStack {
                         Text(game.title).font(.headline).accessibilityIdentifier("battle-status")
                         Spacer()
-                        Text(game.busy ? (game.automatic ? "AUTOPILOT" : "COMPUTER TURN") : "YOUR TURN")
+                        Text(game.busy ? (game.automatic ? "AUTOPILOT" : "COMPUTER TURN") : game.finished ? "OPERATION COMPLETE" : "YOUR TURN")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     GeometryReader { geometry in
@@ -82,7 +82,7 @@ struct BattleView: View {
                     }.pickerStyle(.segmented).disabled(!game.controllable)
                     Button("Reload / clear jam") { game.reloadSelected() }.disabled(!game.controllable || game.value(game.selected, 4) != 0)
                     Button("End patrol turn →") { game.endTurn() }
-                        .buttonStyle(.borderedProminent).disabled(game.busy || game.winner >= 0)
+                        .buttonStyle(.borderedProminent).disabled(game.busy || game.finished)
                     Divider()
                     Text("FIELD REPORT").font(.caption).tracking(2)
                     ScrollView {
