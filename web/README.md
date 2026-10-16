@@ -14,6 +14,10 @@ Run `./build.sh`. Set `WASM_CC` and `WASM_LD` to your LLVM clang and wasm-ld exe
 
 `engine/vendor` snapshots the C library from the fieldofchaos submodule so hosting can build without recursively fetching it. Update all three files together when syncing rules. The original rules are unchanged; `engine/game.c` implements the skirmish orchestration.
 
+## Mac version parity
+
+The browser uses the same C circular movement rules as the native Mac app and displays the same dashed range circle. AI uses Euclidean target ordering and weighted eight-way terrain distances, and acts once per unit every 0.7 seconds. Autopilot controls both patrols; turning it off returns manual control without resetting spent actions. Both versions stop on victory or an ammunition-exhaustion draw. A draw ends the operation and cannot restart until a new battle begins. Browser save/resume remains available, including completed battles.
+
 ## Scope and adaptations
 
 One cell = two tabletop inches. Each unit gets one circular-range, straight-line move and one action per patrol turn; movement uses Euclidean distance without rounding away partial cells (rifle: 1.5-cell radius, carbine: 2.5-cell radius), with ruins and standing units blocking the route and diagonal corner crossings; weapon range uses Chebyshev distance, sight uses a grid ray. Every unit has Firearm Basic/Advanced, Close Combat and First Aid, default wound pools, a rifle or carbine, 10 loaded rounds and 3 spare clips. Ranged attacks use the Gold library's single attack resolution, including its two-round expenditure for advanced rifle/carbine use. No historical claims or campaign simulation are made.
@@ -22,6 +26,6 @@ Supported rules: Gold firearm range/skills/cover, ammunition, movement restricti
 
 ## Checks
 
-`node autopilot-tests.mjs` verifies both-side play, stopping, rapid toggles, reset cancellation and victory shutdown using the real WASM engine with a controlled timer queue.
+`node autopilot-tests.mjs` verifies both-side play, stopping, rapid toggles, reset cancellation, victory/draw shutdown, circular overlays, and terminal save/resume using the real WASM engine with a controlled timer queue.
 
 `node tests.mjs` exercises the compiled WASM module, terrain/path movement, turn restrictions, range/sight, ammunition, combat and victory. The upstream Gold C suite runs with `make -C ../fieldofchaos/src test`.
