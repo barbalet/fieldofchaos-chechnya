@@ -14,7 +14,39 @@ void start(unsigned int seed){memset(units,0,sizeof(units));focgold_seed(seed);s
 int state(int i,int key){if(key==20)return side;if(key==21)return round_no;if(key==22)return winner;if(key==23)return last_roll;if(key==24)return last_threshold;if(key==25)return last_location;if(key==26)return last_hit;if(i<0||i>=6)return -1;Unit *u=&units[i];switch(key){case 0:return u->x;case 1:return u->y;case 2:return alive(i);case 3:return u->moved;case 4:return u->acted;case 5:return u->c.rounds_in_clip;case 6:return u->c.clips;case 7:return u->jam;case 8:return focgold_total_wounds(&u->c.current_wounds);case 9:return u->c.weapon;case 10:return focgold_movement_inches(focgold_weapon_movement_rule(u->c.weapon),&u->c.skills,&u->c.current_wounds)/2;default:if(key>=11&&key<=17)return focgold_wound_value(&u->c.current_wounds,key-11);}return -1;}
 static int absval(int v){return v<0?-v:v;}
 static int occupied(int x,int y){for(int i=0;i<6;i++)if(alive(i)&&units[i].x==x&&units[i].y==y)return 1;return 0;}
-int can_move(int i,int x,int y){if(!valid(i)||units[i].moved||terrain(x,y)==2||occupied(x,y))return 0;int dist[384],queue[384],head=0,tail=0;for(int n=0;n<384;n++)dist[n]=-1;int p=units[i].y*24+units[i].x;dist[p]=0;queue[tail++]=p;int max=state(i,10);while(head<tail){int q=queue[head++],qx=q%24,qy=q/24;if(qx==x&&qy==y)return 1;if(dist[q]>=max)continue;int dx[]={1,-1,0,0},dy[]={0,0,1,-1};for(int k=0;k<4;k++){int nx=qx+dx[k],ny=qy+dy[k];if(terrain(nx,ny)==2||occupied(nx,ny))continue;int n=ny*24+nx;if(dist[n]<0){dist[n]=dist[q]+1;queue[tail++]=n;}}}return 0;}
+/* Grid centres are two inches apart. Keep the full C movement allowance,
+ * including half-cell radii such as a rifle's three-inch movement. */
+int movement_range_inches(int i) {
+    if (!alive(i)) return 0;
+    return focgold_movement_inches(focgold_weapon_movement_rule(units[i].c.weapon),
+                                   &units[i].c.skills, &units[i].c.current_wounds);
+}
+static int movement_clear(int x, int y) {
+    return terrain(x, y) != 2 && !occupied(x, y);
+}
+/* Supercover of the straight centre-to-centre segment. At an exact corner,
+ * both adjacent squares must be clear, so units cannot squeeze through ruins. */
+static int movement_line_clear(int x, int y, int tx, int ty) {
+    int nx=absval(tx-x), ny=absval(ty-y), ix=0, iy=0;
+    int sx=tx>x?1:-1, sy=ty>y?1:-1;
+    while(ix<nx || iy<ny) {
+        int crossing_x=(1+2*ix)*ny, crossing_y=(1+2*iy)*nx;
+        if(crossing_x==crossing_y) {
+            if(!movement_clear(x+sx,y) || !movement_clear(x,y+sy)) return 0;
+            x+=sx; y+=sy; ix++; iy++;
+        } else if(crossing_x<crossing_y) { x+=sx; ix++; }
+        else { y+=sy; iy++; }
+        if(!movement_clear(x,y)) return 0;
+    }
+    return 1;
+}
+int can_move(int i,int x,int y) {
+    if(!valid(i) || units[i].moved || !movement_clear(x,y)) return 0;
+    int dx=x-units[i].x, dy=y-units[i].y;
+    int inches=movement_range_inches(i);
+    if(4*(dx*dx+dy*dy)>inches*inches) return 0;
+    return movement_line_clear(units[i].x,units[i].y,x,y);
+}
 int move_unit(int i,int x,int y){if(!can_move(i,x,y))return 0;units[i].x=x;units[i].y=y;units[i].moved=1;return 1;}
 static int distance(int i,int j){int x=absval(units[i].x-units[j].x),y=absval(units[i].y-units[j].y);return 2*(x>y?x:y);}
 int sight(int i,int j){int x=units[i].x,y=units[i].y,tx=units[j].x,ty=units[j].y,dx=absval(tx-x),dy=-absval(ty-y),sx=x<tx?1:-1,sy=y<ty?1:-1,e=dx+dy;while(x!=tx||y!=ty){int e2=2*e;if(e2>=dy){e+=dy;x+=sx;}if(e2<=dx){e+=dx;y+=sy;}if(terrain(x,y)==2)return 0;}return 1;}

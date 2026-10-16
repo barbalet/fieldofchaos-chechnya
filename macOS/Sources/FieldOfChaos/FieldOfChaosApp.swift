@@ -52,6 +52,7 @@ struct BattleView: View {
                     }
                     GeometryReader { geometry in
                         let size = min(geometry.size.width / 24, geometry.size.height / 16)
+                        ZStack(alignment: .topLeading) {
                         VStack(spacing: 1) {
                             ForEach(0..<16, id: \.self) { y in
                                 HStack(spacing: 1) {
@@ -59,6 +60,14 @@ struct BattleView: View {
                                 }
                             }
                         }
+                        if game.controllable && game.action == .move {
+                            Circle().stroke(blue.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
+                                .frame(width: game.movementRadius * size * 2, height: game.movementRadius * size * 2)
+                                .position(x: (Double(game.value(game.selected, 0)) + 0.5) * size,
+                                          y: (Double(game.value(game.selected, 1)) + 0.5) * size)
+                                .allowsHitTesting(false).accessibilityHidden(true)
+                        }
+                        }.clipped()
                     }
                     .aspectRatio(24.0 / 16, contentMode: .fit)
                     HStack {
@@ -99,7 +108,7 @@ struct BattleView: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Field manual").font(.title.bold())
                 Text("Incapacitate all three opposing units. Select a friendly unit, choose Move, Fire or First aid, then click the destination or target. Each unit gets one move and one action per patrol turn. First aid targets yourself or an adjacent standing ally.")
-                Text("Rubble provides light cover. Ruins block movement and sight. One cell equals two tabletop inches. Fire consumes ammunition; reload consumes an action and a spare clip. Losing an arm prevents shooting; depletion of head, chest or abdomen incapacitates a unit.")
+                Text("Rubble provides light cover. Ruins block movement and sight. One cell equals two tabletop inches. Movement uses true straight-line distance within the dashed circle. Highlighted destinations are legal; ruins and standing units block the route, including diagonal corner crossings. Fire consumes ammunition; reload consumes an action and a spare clip. Losing an arm prevents shooting; depletion of head, chest or abdomen incapacitates a unit.")
                 Text("Autopilot controls both patrols, one unit every 0.7 seconds. Switch it off at any time to take control of the current patrol. Already spent moves and actions stay spent. It stops at victory. Computer opponent controls South only; disable it for shared-device two-player play.")
                 Text("This fictional skirmish uses the existing Gold C rules. Grid terrain, distance, turn structure, fixed loadouts and victory are game adaptations. Grenades, shotguns, melee, character creation, campaigns and saved games are not included in this native version.").foregroundStyle(.secondary)
                 Button("Return to operation") { showManual = false }.keyboardShortcut(.defaultAction)

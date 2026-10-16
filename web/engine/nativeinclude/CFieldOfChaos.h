@@ -5,6 +5,7 @@ void start(unsigned int seed);
 int state(int unit, int key);
 int terrain(int x, int y);
 int alive(int unit);
+int movement_range_inches(int unit);
 int can_move(int unit, int x, int y);
 int move_unit(int unit, int x, int y);
 int can_attack(int unit, int target);

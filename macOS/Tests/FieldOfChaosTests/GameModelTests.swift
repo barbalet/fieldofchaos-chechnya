@@ -44,9 +44,9 @@ final class GameModelTests: XCTestCase {
         XCTAssertEqual(game.value(0, 0), 2)
     }
     @MainActor func testAutopilotStopsWhenBothPatrolsExhaustAmmunition() async throws {
-        // Seed 279 previously ran forever with one fully healed, empty unit
+        // Seed 253 reaches ammunition exhaustion with circular movement with one fully healed, empty unit
         // on each side. Exercise the real engine and scheduled AI, not a mock.
-        let game = GameModel(seed: 279, interval: .milliseconds(1))
+        let game = GameModel(seed: 253, interval: .milliseconds(1))
         game.setAutopilot(true)
         let deadline = ContinuousClock.now + .seconds(5)
         while game.automatic && ContinuousClock.now < deadline {
@@ -83,7 +83,7 @@ final class GameModelTests: XCTestCase {
     }
 
     @MainActor func testOneEmptyPatrolDoesNotEndBattleWhileOtherCanFire() {
-        let game = GameModel(seed: 279)
+        let game = GameModel(seed: 253)
         game.setComputerOpponent(false)
         var observedOneEmptyPatrol = false
         for _ in 0..<600 {
@@ -102,6 +102,27 @@ final class GameModelTests: XCTestCase {
         }
         XCTAssertTrue(observedOneEmptyPatrol)
         XCTAssertTrue(game.isDraw)
+    }
+
+    @MainActor func testMovementUsesCircularDistanceAndFullInchAllowance() {
+        let game = GameModel(seed: 123)
+        game.setComputerOpponent(false)
+        XCTAssertEqual(movement_range_inches(0), 3)
+        XCTAssertEqual(game.movementRadius, 1.5)
+        XCTAssertTrue(game.reachable(3, 4), "A 2.83-inch diagonal fits a rifle's 3-inch move")
+        XCTAssertFalse(game.reachable(4, 3), "Four inches is outside the rifle's circle")
+        game.selected = 1
+        XCTAssertEqual(game.movementRadius, 2.5)
+        for dx in [-2, 2] {
+            for dy in [-1, 1] {
+                XCTAssertTrue(game.reachable(2 + dx, 7 + dy), "A 4.47-inch move fits a carbine's 5-inch circle")
+            }
+        }
+        XCTAssertFalse(game.reachable(4, 9), "A 5.66-inch diagonal is outside the circle")
+        game.click(4, 8)
+        XCTAssertEqual(game.value(1, 0), 4)
+        XCTAssertEqual(game.value(1, 1), 8)
+        XCTAssertFalse(game.reachable(4, 7), "Only one move is allowed per turn")
     }
 
 }

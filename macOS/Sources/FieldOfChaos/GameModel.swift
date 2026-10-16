@@ -38,6 +38,7 @@ final class GameModel: ObservableObject {
     func standing(_ i: Int) -> Bool { value(i, 2) != 0 }
     var controllable: Bool { !busy && !finished && standing(selected) && selected / 3 == side }
     func occupant(_ x: Int, _ y: Int) -> Int? { (0..<6).first { standing($0) && value($0, 0) == x && value($0, 1) == y } }
+    var movementRadius: Double { Double(movement_range_inches(Int32(selected))) / 2 }
     func reachable(_ x: Int, _ y: Int) -> Bool { controllable && action == .move && can_move(Int32(selected), Int32(x), Int32(y)) != 0 }
     func targetable(_ i: Int) -> Bool { controllable && action == .fire && can_attack(Int32(selected), Int32(i)) != 0 }
     func record(_ text: String) { reports.insert(text, at: 0); if reports.count > 150 { reports.removeLast() } }
@@ -153,19 +154,26 @@ final class GameModel: ObservableObject {
         if nextUnit == first + 3, winner < 0 { _ = end_turn(); nextUnit = side * 3; record("Patrol turn ended.") }
         refresh()
     }
-    private func distance(_ a: Int, _ b: Int) -> Int { max(abs(value(a, 0) - value(b, 0)), abs(value(a, 1) - value(b, 1))) }
-    private func approach(_ target: Int) -> [Int] {
-        var distances = Array(repeating: 1000, count: 384)
+    private func distance(_ a: Int, _ b: Int) -> Int { (value(a, 0) - value(b, 0)) * (value(a, 0) - value(b, 0)) + (value(a, 1) - value(b, 1)) * (value(a, 1) - value(b, 1)) }
+    private func approach(_ target: Int) -> [Double] {
+        var distances = Array(repeating: 1000.0, count: 384)
         var queue = [value(target, 1) * 24 + value(target, 0)]
         distances[queue[0]] = 0
         var head = 0
         while head < queue.count {
             let cell = queue[head]; head += 1
-            for (dx, dy) in [(1,0),(-1,0),(0,1),(0,-1)] {
+            for (dx, dy) in [(1,0),(-1,0),(0,1),(0,-1),(1,1),(1,-1),(-1,1),(-1,-1)] {
                 let x = cell % 24 + dx, y = cell / 24 + dy
                 guard terrain(Int32(x), Int32(y)) != 2 else { continue }
                 let next = y * 24 + x
-                if distances[next] == 1000 { distances[next] = distances[cell] + 1; queue.append(next) }
+                if dx != 0 && dy != 0 {
+                    guard terrain(Int32(x), Int32(cell / 24)) != 2,
+                          terrain(Int32(cell % 24), Int32(y)) != 2 else { continue }
+                }
+                let cost = dx != 0 && dy != 0 ? 2.0.squareRoot() : 1.0
+                if distances[next] > distances[cell] + cost + 0.000001 {
+                    distances[next] = distances[cell] + cost; queue.append(next)
+                }
             }
         }
         return distances

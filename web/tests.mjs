@@ -14,3 +14,20 @@ view.setInt32(base+xOffset,3,true);view.setInt32(base+xOffset+4,3,true);view.set
 for(let n=0;n<150&&e.alive(3);n++){if(e.state(0,5)<2)e.reload(0);else e.attack(0,3);e.end_turn();e.end_turn()}
 assert.equal(e.alive(3),0);assert.equal(e.can_attack(0,3),0);
 console.log('WASM checks passed: initialization, terrain, path limits, ownership, turns, range, combat, ammunition, save restoration and incapacitation.');
+
+// Circular movement preserves the full inch allowance, rather than flooring
+// to cells or counting Manhattan/diagonal steps.
+e.start(123);
+assert.equal(e.movement_range_inches(0),3);
+assert.equal(e.can_move(0,3,4),1); // sqrt(2) cells = 2.83 inches
+assert.equal(e.can_move(0,4,3),0); // 4 inches
+assert.equal(e.can_move(1,4,8),1); // sqrt(5) cells = 4.47 inches
+assert.equal(e.can_move(1,4,9),0); // sqrt(8) cells = 5.66 inches
+const position=(unit,x,y)=>{view.setInt32(base+unit*stride+xOffset,x,true);view.setInt32(base+unit*stride+xOffset+4,y,true)};
+position(1,7,3);
+assert.equal(e.can_move(1,9,3),0,'No movement through a ruin');
+position(0,7,2);
+assert.equal(e.can_move(0,8,1),0,'No diagonal corner cutting beside a ruin');
+e.start(123);position(1,1,3);
+assert.equal(e.can_move(1,2,4),0,'A standing unit blocks a diagonal corner');
+console.log('Circular movement checks passed: fractional-cell radii, diagonal distances, blocked routes and corners.');

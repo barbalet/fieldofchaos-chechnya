@@ -15,7 +15,7 @@ The script builds the host architecture (Apple Silicon or Intel) and creates a l
 
 ## Play
 
-Click a friendly marker to select a unit. Choose Move, Fire or First aid, then click a cell or target. Blue outlines show available moves; orange outlines show valid targets. Each unit gets one move and one action per patrol turn. Reload and clear-jam actions use the same C engine as the website. End the patrol turn to give the other side control.
+Click a friendly marker to select a unit. Choose Move, Fire or First aid, then click a cell or target. Movement uses the full C allowance as a true-distance circle (three inches / 1.5 cells for a rifle, five inches / 2.5 cells for a carbine). The dashed circle shows the geometric range; blue outlines show unobstructed destinations. Ruins and standing units block the straight route, including diagonal corner crossings. Orange outlines show valid attack targets. Each unit gets one move and one action per patrol turn. Reload and clear-jam actions use the same C engine as the website. End the patrol turn to give the other side control.
 
 Enable **Autopilot · AI plays both patrols** to watch both sides play, one unit every 0.7 seconds. Disable it whenever you want to take over the current patrol. Existing moves, ammunition, wounds and spent actions remain unchanged. Autopilot stops at victory or a draw when every surviving unit has insufficient loaded ammunition to fire and no spare clips. A draw ends the operation; start a new operation to play again. It remains selected when starting a new operation, so the new battle starts automatically. The **Computer opponent** switch controls South when autopilot is off; turn it off for shared-device two-player play.
 
