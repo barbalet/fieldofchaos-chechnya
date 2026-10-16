@@ -44,9 +44,9 @@ final class GameModelTests: XCTestCase {
         XCTAssertEqual(game.value(0, 0), 2)
     }
     @MainActor func testAutopilotStopsWhenBothPatrolsExhaustAmmunition() async throws {
-        // Seed 253 reaches ammunition exhaustion with circular movement with one fully healed, empty unit
+        // Seed 1497 reaches ammunition exhaustion with circular movement with one fully healed, empty unit
         // on each side. Exercise the real engine and scheduled AI, not a mock.
-        let game = GameModel(seed: 253, interval: .milliseconds(1))
+        let game = GameModel(seed: 1497, interval: .milliseconds(1))
         game.setAutopilot(true)
         let deadline = ContinuousClock.now + .seconds(5)
         while game.automatic && ContinuousClock.now < deadline {
@@ -83,7 +83,7 @@ final class GameModelTests: XCTestCase {
     }
 
     @MainActor func testOneEmptyPatrolDoesNotEndBattleWhileOtherCanFire() {
-        let game = GameModel(seed: 253)
+        let game = GameModel(seed: 1497)
         game.setComputerOpponent(false)
         var observedOneEmptyPatrol = false
         for _ in 0..<600 {
@@ -104,25 +104,23 @@ final class GameModelTests: XCTestCase {
         XCTAssertTrue(game.isDraw)
     }
 
-    @MainActor func testMovementUsesCircularDistanceAndFullInchAllowance() {
+    @MainActor func testMovementUsesLargerCircularRanges() {
         let game = GameModel(seed: 123)
         game.setComputerOpponent(false)
-        XCTAssertEqual(movement_range_inches(0), 3)
-        XCTAssertEqual(game.movementRadius, 1.5)
-        XCTAssertTrue(game.reachable(3, 4), "A 2.83-inch diagonal fits a rifle's 3-inch move")
-        XCTAssertFalse(game.reachable(4, 3), "Four inches is outside the rifle's circle")
+        for unit in 0..<6 { XCTAssertGreaterThan(movement_range_inches(Int32(unit)), 6) }
+        XCTAssertEqual(movement_range_inches(0), 8)
+        XCTAssertEqual(game.movementRadius, 4)
+        XCTAssertTrue(game.reachable(5, 5), "A sqrt(13)-cell move fits a four-cell circle")
+        XCTAssertTrue(game.reachable(6, 3), "The four-cell boundary is included")
+        XCTAssertFalse(game.reachable(6, 4), "Beyond the circular boundary")
         game.selected = 1
-        XCTAssertEqual(game.movementRadius, 2.5)
-        for dx in [-2, 2] {
-            for dy in [-1, 1] {
-                XCTAssertTrue(game.reachable(2 + dx, 7 + dy), "A 4.47-inch move fits a carbine's 5-inch circle")
-            }
-        }
-        XCTAssertFalse(game.reachable(4, 9), "A 5.66-inch diagonal is outside the circle")
-        game.click(4, 8)
-        XCTAssertEqual(game.value(1, 0), 4)
-        XCTAssertEqual(game.value(1, 1), 8)
-        XCTAssertFalse(game.reachable(4, 7), "Only one move is allowed per turn")
+        XCTAssertEqual(game.movementRadius, 5)
+        XCTAssertTrue(game.reachable(5, 11), "A 3-4-5 diagonal lies on the circle")
+        XCTAssertFalse(game.reachable(6, 11), "A sqrt(32)-cell diagonal is outside the circle")
+        game.click(5, 11)
+        XCTAssertEqual(game.value(1, 0), 5)
+        XCTAssertEqual(game.value(1, 1), 11)
+        XCTAssertFalse(game.reachable(4, 11), "Only one move is allowed per turn")
     }
 
 }

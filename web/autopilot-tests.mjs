@@ -16,9 +16,9 @@ const tick=async()=>{const fn=timers.shift();if(fn)fn();await Promise.resolve();
 const snapshot=()=>Array.from(new Uint8Array(engine.memory.buffer,engine.save_ptr(),engine.save_size()));
 assert.equal(get('autopilot').disabled,false);
 const radius=()=>get('board').children.find(x=>x.attributes.class==='range-overlay')?.children[0].attributes.r;
-assert.equal(radius(),'1.5');
+assert.equal(radius(),'4');
 get('board').children[7*24+2].onclick();
-assert.equal(radius(),'2.5');
+assert.equal(radius(),'5');
 get('new').onclick();
 get('autopilot').checked=true;get('autopilot').onchange();
 for(let n=0;n<50&&engine.state(0,21)<2;n++)await tick();
@@ -31,7 +31,7 @@ const stride=engine.save_size()/6,view=new DataView(engine.memory.buffer);for(le
 console.log('Autopilot checks passed: both sides advance, disabling stops pending actions, rapid toggles/reset cancel old loops, and victory stops autopilot.');
 
 // Match the Mac regression battle, including exhaustion and terminal controls.
-seed=253;get('new').onclick();get('autopilot').checked=true;get('autopilot').onchange();
+seed=1497;get('new').onclick();get('autopilot').checked=true;get('autopilot').onchange();
 let oneSideEmpty=false;
 for(let n=0;n<1200&&get('autopilot').checked;n++){
  const empty=[0,1].map(side=>![0,1,2].some(k=>{const i=side*3+k;return engine.state(i,2)&&(engine.state(i,5)>=2||engine.state(i,6)>0)}));
