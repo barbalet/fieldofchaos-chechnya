@@ -12,6 +12,8 @@ Use an HTTP server: opening HTML directly with `file://` cannot reliably load th
 
 Run `./build.sh`. Set `WASM_CC` and `WASM_LD` to your LLVM clang and wasm-ld executables if they differ from the defaults. Requires a clang with wasm32 support and lld. The tiny freestanding runtime supplies only memset and strcmp; no imported JavaScript rules or WASI runtime are used.
 
+The build versions JavaScript and WASM URLs using content hashes so updated pages load matching assets instead of cached versions with older patrol sizes. Deploy the complete `dist/` folder together. If an already-open page still shows three people per side, reload it to load the updated page.
+
 `engine/vendor` snapshots the C library from the fieldofchaos submodule so hosting can build without recursively fetching it. Update all three files together when syncing rules. The original rules are unchanged; `engine/game.c` implements the skirmish orchestration.
 
 ## Mac version parity

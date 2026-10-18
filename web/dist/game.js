@@ -198,9 +198,13 @@ $('resume').onclick = () => {
     } catch { log('No compatible saved operation found.'); }
 };
 try {
-    const response = await fetch('game.wasm'); if (!response.ok) throw Error(`HTTP ${response.status}`);
+    const response = await fetch('game.wasm?v=8bc0314e081f5152'); if (!response.ok) throw Error(`HTTP ${response.status}`);
     const result = await WebAssembly.instantiate(await response.arrayBuffer(), {});
-    e = result.instance.exports; reset(); $('engine').textContent = 'WASM ACTIVE';
+    e = result.instance.exports;
+    if (e.unit_count?.() !== unitCount || e.patrol_size?.() !== patrolSize) {
+        throw Error('Outdated engine: five players per patrol are required. Reload the page to update.');
+    }
+    reset(); $('engine').textContent = 'WASM ACTIVE';
 } catch (err) {
     $('turn').textContent = 'Engine unavailable'; $('hint').textContent = 'Serve this folder over HTTP to load game.wasm. ' + err.message;
     document.querySelectorAll('button:not(#help), #autopilot').forEach(control => control.disabled = true);
