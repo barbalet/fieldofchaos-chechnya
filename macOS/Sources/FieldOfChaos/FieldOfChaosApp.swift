@@ -60,7 +60,7 @@ struct BattleView: View {
                                 }
                             }
                         }
-                        if game.controllable && game.action == .move {
+                        if game.controllable && (game.action == .move || game.action == .run) {
                             Circle().stroke(blue.opacity(0.7), style: StrokeStyle(lineWidth: 1.5, dash: [5, 3]))
                                 .frame(width: game.movementRadius * size * 2, height: game.movementRadius * size * 2)
                                 .position(x: (Double(game.value(game.selected, 0)) + 0.5) * size,
@@ -80,15 +80,27 @@ struct BattleView: View {
                 }
                 VStack(alignment: .leading, spacing: 12) {
                     Text(game.name(game.selected)).font(.title3.bold())
-                    Text("\(game.value(game.selected, 9) == 1 ? "Rifle" : "Carbine") · \(game.value(game.selected, 5))/10 rounds\n\(game.value(game.selected, 6)) spare clips\n\(game.value(game.selected, 3) != 0 ? "Moved" : "Move ready") / \(game.value(game.selected, 4) != 0 ? "Action spent" : "Action ready")")
+                    Text("\(game.weapon(game.selected)) · \(game.value(game.selected, 5))/10 rounds\n\(game.value(game.selected, 6)) spare clips\n\(game.value(game.selected, 28) != 0 ? "Movement spent (focused shot)" : game.value(game.selected, 27) == 2 ? "Ran" : game.value(game.selected, 3) != 0 ? "Moved" : "Move ready") / \(game.value(game.selected, 4) != 0 ? "Action spent" : "Action ready")")
                         .font(.callout).foregroundStyle(.secondary)
+                    Text("Skills").font(.caption.bold())
+                    Text(game.skills(game.selected).joined(separator: " · ")).font(.caption).foregroundStyle(.secondary)
+                    Text(game.value(game.selected, 7) != 0 ? "Weapon jammed — clear before firing" : game.value(game.selected, 27) == 2 ? "Running · harder to hit" : game.value(game.selected, 28) != 0 ? "Focused shot · movement spent" : "").font(.caption)
                     ForEach(0..<7, id: \.self) { location in
                         HStack { Text(GameModel.locations[location].capitalized); Spacer(); Text("\(game.value(game.selected, location + 11))") }
                             .font(.caption).monospacedDigit()
                     }
                     Picker("Action", selection: $game.action) {
                         ForEach(GameModel.Action.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-                    }.pickerStyle(.segmented).disabled(!game.controllable)
+                    }.pickerStyle(.menu).disabled(!game.controllable)
+                    .onChange(of: game.action) { _, choice in
+                        switch choice {
+                        case .move: game.message = "Choose a highlighted destination; the action remains available."
+                        case .run: game.message = "Run expands movement and spends the action. Choose a highlighted destination."
+                        case .fire: game.message = "Choose an opposing target. Normal movement remains available."
+                        case .focus: game.message = "Focused shot requires no movement: +1 aiming die, +2 with Sniper Training."
+                        case .aid: game.message = "Choose yourself or an adjacent standing ally for treatment."
+                        }
+                    }
                     Button("Reload / clear jam") { game.reloadSelected() }.disabled(!game.controllable || game.value(game.selected, 4) != 0)
                     Button("End patrol turn →") { game.endTurn() }
                         .buttonStyle(.borderedProminent).disabled(game.busy || game.finished)
@@ -107,7 +119,7 @@ struct BattleView: View {
         .sheet(isPresented: $showManual) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Field manual").font(.title.bold())
-                Text("Incapacitate all three opposing units. Select a friendly unit, choose Move, Fire or First aid, then click the destination or target. Each unit gets one move and one action per patrol turn. First aid targets yourself or an adjacent standing ally.")
+                Text("Incapacitate all five opposing units. Select a friendly unit, choose Move, Fire or First aid, then click the destination or target. Each unit gets one move and one action per patrol turn. Run expands movement by 50%, or doubles it with Running, and consumes the action. Focused shot requires no movement, adds one aiming die and consumes movement; Sniper Training adds a second aiming die. Running targets impose a two-die penalty; moving targets impose a one-die penalty. These aiming and running choices are explicit skirmish adaptations. First aid targets yourself or an adjacent standing ally.")
                 Text("Rubble provides light cover. Ruins block movement and sight. One cell equals two tabletop inches. Movement uses true straight-line distance within the dashed circle. Highlighted destinations are legal; ruins and standing units block the route, including diagonal corner crossings. Fire consumes ammunition; reload consumes an action and a spare clip. Losing an arm prevents shooting; depletion of head, chest or abdomen incapacitates a unit.")
                 Text("Autopilot controls both patrols, one unit every 0.7 seconds. Switch it off at any time to take control of the current patrol. Already spent moves and actions stay spent. It stops at victory. Computer opponent controls South only; disable it for shared-device two-player play.")
                 Text("This fictional skirmish uses the existing Gold C rules. Grid terrain, distance, turn structure, fixed loadouts and victory are game adaptations. Grenades, shotguns, melee, character creation, campaigns and saved games are not included in this native version.").foregroundStyle(.secondary)
@@ -123,8 +135,8 @@ struct BattleView: View {
                 Rectangle().fill(ground == 2 ? Color.gray.opacity(0.6) : ground == 1 ? Color.brown.opacity(0.5) : Color.white.opacity(0.045))
                 if ground != 0 { Text(ground == 2 ? "▰" : "▧").foregroundStyle(.secondary).font(.caption) }
                 if let unit {
-                    Circle().fill(unit < 3 ? blue : orange).padding(2)
-                    Text("\(unit % 3 + 1)").font(.system(size: 12, weight: .bold)).foregroundStyle(.black)
+                    Circle().fill(unit < game.patrolSize ? blue : orange).padding(2)
+                    Text("\(unit % game.patrolSize + 1)").font(.system(size: 12, weight: .bold)).foregroundStyle(.black)
                 }
                 Rectangle().strokeBorder(unit == game.selected ? Color.yellow : game.reachable(x, y) ? blue : unit.map(game.targetable) == true ? orange : Color.clear, lineWidth: 2)
             }.contentShape(Rectangle())

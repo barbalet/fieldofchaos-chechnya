@@ -7,3 +7,5 @@
 .range-overlay{position:absolute;inset:var(--board-padding);width:calc(100% - 2 * var(--board-padding));height:calc(100% - 2 * var(--board-padding));pointer-events:none;z-index:3;overflow:hidden}
 .range-overlay circle{fill:none;stroke:#88c7cdb3;stroke-width:1.5;stroke-dasharray:5 3;vector-effect:non-scaling-stroke}
 @media(max-width:600px){#board{--board-padding:5px}}
+
+#skills{font-size:11px;line-height:1.6;color:#c5d4a3;border-top:1px solid var(--line);padding-top:10px}
